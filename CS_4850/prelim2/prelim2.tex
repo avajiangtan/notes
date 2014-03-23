@@ -1,0 +1,129 @@
+\documentclass{hw}
+\title{CS 4850 -- Prelim 2}
+\renewcommand\emph[1]{{\bf\color{Blue}#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\begin{document}
+\maketitle
+
+\section{SVD}
+The singular value decomposition of a matrix $A$ is 
+\[\cbox{
+  A = UDV^T
+}\]
+where
+\begin{itemize}
+  \item $A$ is $m \times n$
+  \item $U$ is $m \times m$
+  \item $D$ is $m \times n$
+  \item $V$ is $n \times n$
+\end{itemize}
+Both $U$ and $V$ are orthonormal matrices. $V$ is a diagonal matrix with
+positive, real entries. The SVD of a matrix $A$ is defined for all $A$. The
+vectors in $V$ are the \emph{right-singular vectors} of $A$. The vectors in $U$
+are the \emph{left-singular} vectors of $A$.
+
+\begin{figure}[ht]
+  \centering
+\[
+\begin{pycode}
+from imports import *
+tex.svd(np.array([[1,2],[3,4],[5,6]]))
+\end{pycode}
+\]
+  \caption{Sample SVD}
+  \label{fig:sample-svd}
+\end{figure}
+
+\subsection{Intuition}
+Consider an $n \times d$ matrix $A$. Think of the matrix as the composition of
+$n$ $d$-dimensional points. We want to find the best $k$-dimensional subspace
+with respect the points. The best fit subspace is the subspace that
+\emph{minimizes the sum of squared distances to the hyperplane}. 
+
+Consider first projecting a $d$-dimensional point $p$ onto a $1$-dimensional
+subspace. Let $p_{||}$ be the projection of $p$ onto the subspace. Let
+$p_{\perp} = p - p_{||}$ be the component of $p$ perpendicular to the subspace.
+By definition,
+\[
+  |p| = |p_{||}| + |p_{\perp}|
+\]
+If we want to minimize $|p_\perp|$, we can do so by \emph{maximizing $p_{||}$},
+by the Pythagorean Theorem. Now, let's see how finding this best fit subspace
+relates to SVD.
+
+\subsection{First Singular \{Vector, Value\}}
+We'll now define a \emph{singular vector} of an $n \times d$ matrix $A$. But
+first, recall that if we want to project a vector $v$ onto a vector $u$, we
+have
+\[\cbox{
+  \text{proj}_{u}(v) = \frac{v \cdot u}{u \cdot u}u
+}\]
+For a unit vector $u$, we have
+\[\cbox{
+  \text{proj}_{u}(v) = (v \cdot u)u
+}\]
+
+Now consider one row of $A$, say $a$. Also consider the best one-dimensional
+subspace for the rows of $A$, say $v$. The projection of $a$ onto $v$ is $(a
+\cdot v)v$. The magnitude of the projection is $|a \cdot v|$. $Av$ will yield a
+column vector. Each entry is the signed length of that row's projection onto
+$v$. $|Av|^2$ is the sum of squared lengths of projections. If we maximize this
+quantity, we've found the best fit subspace.
+
+Define the \emph{first singular vector} of $A$, $v_1$ as
+\[\cbox{
+  v_1 = \argmax_{|v|=1}|Av|
+}\]
+The first singular vector of $A$ is the best one-dimensional fitting subspace
+of the rows of $A$. $|Av_1|$ is the \emph{first singular value} of $A$. Notice
+that $\sigma_1^2(A) = |Av_1|^2$ is the sum of squared lengths of the
+projections of the rows of $A$ onto $v$. This value can be thought of as the
+amount of the matrix that $v_1$ captures. If $\sigma_1$ is large, then $v_1$
+captures a large portion of the matrix. The contrapositive of the converse is
+also true. That is, a small $\sigma_1$ implies that $v_1$ captured a small
+fraction of the matrix.
+
+\subsection{Higher Order Singular \{Vectors, Values\}}
+We can find higher order singular vectors and values greedily. The second
+singular vector is the vector perpendicular to $v_1$ that captures the most of
+$A$. That is, it maximizes $|Av|$ across all vectors, $v$, perpendicular to
+$v_1$. We can apply this rule inductively to find all the higher order singular vectors.
+\begin{gather*}
+  v_2 = \argmax_{v \perp v_1, |v| = 1} |Av| \\
+  v_3 = \argmax_{v \perp v_1,v_2, |v| = 1} |Av| \\
+  \vdots \\
+  \cbox{v_n = \argmax_{v \perp v_{\set{1,\cdots,n-1}}, |v| = 1} |Av|}
+\end{gather*}
+This equation is valid when $n \leq r$, where $r$ is the rank of $A$. That is,
+there are exactly $r$ singular values in a rank $r$ matrix. The singular values
+of $A$ can be found directly from the singular vectors.
+\[\cbox{
+  \sigma_n(A) = |Av_n|
+}\]
+
+\begin{claim}
+  Our greedy algorithm is optimal
+\begin{proof}
+First, a remark on the distance of $A$ to some subspace $W$. Given an arbitrary
+orthogonal basis for $W$, $(w_1, w_2, \cdots, w_n)$, we can express the squared
+distance of $A$ to $W$ as $|Aw_1|^2 + |Aw_1|^2 + \cdots + |Aw_n|^2$. This can
+be thought of as the sum of the matrix captures of each vector in the basis.
+
+Enter the proof. For a one-dimensional subspace, $v_1$ is optimal by
+definition. Consider a two-dimensional subspace. Consider an optimal such
+subspace $W$. Given a subspace, we can use the note above to choose an
+\emph{arbitrary} basis $(w_1, w_2)$. We will pick $w_2$ to be perpendicular to
+$v_1$. By definition $|Aw_1| \leq |Av_1|$. Because we've rigged $w_2$, it is
+also true that $|Aw_2| \leq |Av_2|$. Thus,
+\[
+  |Aw_1|^2 + |Aw_2|^2 \leq |Av_1|^2 + |Av_2|^2
+\]
+Our singular vectors form a subspace that is at least as good as the optimal
+solution $W$. Thus, the subspace spanned by the singular vectors is optimal. 
+
+A simple induction will prove this holds for any number of singular vectors.
+\end{proof}
+\end{claim}
+
+\end{document}
