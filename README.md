@@ -1,4 +1,4 @@
-# notes #
+# Notes #
 
 Variety of notes for classes and concepts
 
